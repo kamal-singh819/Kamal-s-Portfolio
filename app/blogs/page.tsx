@@ -8,8 +8,10 @@ export const metadata: Metadata = {
   description: "Markdown articles about web development and product building."
 };
 
-export default function BlogsPage() {
-  const blogs = getAllBlogs();
+export const dynamic = "force-dynamic";
+
+export default async function BlogsPage() {
+  const blogs = await getAllBlogs();
 
   return (
     <div className="space-y-10">
@@ -20,9 +22,13 @@ export default function BlogsPage() {
       />
 
       <div className="space-y-6">
-        {blogs.map((blog) => (
-          <BlogCard key={blog.slug} blog={blog} />
-        ))}
+        {blogs.length ? (
+          blogs.map((blog) => <BlogCard key={blog.slug} blog={blog} />)
+        ) : (
+          <p className="text-sm leading-6 text-zinc-600">
+            No blog posts are published yet.
+          </p>
+        )}
       </div>
     </div>
   );

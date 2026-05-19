@@ -1,17 +1,17 @@
 # Portfolio Blog App
 
-A clean, simple developer portfolio and Markdown blog built with Next.js App Router, Tailwind CSS, Firebase Firestore, and `react-markdown`.
+A clean, simple developer portfolio and Supabase-backed blog built with Next.js App Router and Tailwind CSS.
 
 ## Features
 
 - Portfolio home page, projects page, and about page
 - Blog listing at `/blogs`
 - Blog detail pages at `/blog/[slug]`
-- Local Markdown posts with frontmatter
+- Supabase-backed posts created from `/admin/blog`
 - Auto calculated read time
-- `react-markdown` rendering with GitHub-flavored Markdown
-- Fenced code block syntax highlighting
-- Firestore-powered public comments with one-level replies
+- Quill rich text editing with side-by-side preview
+- Logged-in-only comments and likes
+- Admin-only blog create/update flow
 - Dynamic blog metadata, `sitemap.xml`, and `robots.txt`
 - Vercel-ready project structure
 
@@ -23,7 +23,7 @@ A clean, simple developer portfolio and Markdown blog built with Next.js App Rou
 npm install
 ```
 
-2. Create a Firebase project and a Firestore database.
+2. Create a Supabase project.
 
 3. Copy the environment file:
 
@@ -31,66 +31,27 @@ npm install
 cp .env.example .env.local
 ```
 
-4. Add your Firebase web app config to `.env.local`.
+4. Add your Supabase config to `.env.local`:
 
-5. Run the development server:
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+5. Run `supabase/schema.sql` in the Supabase SQL editor, then set your own row in `public.users` to `role = 'admin'`.
+
+6. Run the development server:
 
 ```bash
 npm run dev
 ```
 
-6. Open `http://localhost:3000`.
-
-## Firestore Collections
-
-The app writes to these collections:
-
-- `comments`: documents with `blogSlug`, `name`, `comment`, `parentId`, and `createdAt`
-
-Top-level comments use `parentId: null`. Replies store the parent comment id in `parentId`.
-
-For a simple public blog, start with rules like this and tighten them as your needs grow:
-
-```txt
-rules_version = '2';
-
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /comments/{commentId} {
-      allow read: if true;
-      allow create: if
-        request.resource.data.blogSlug is string &&
-        request.resource.data.name is string &&
-        request.resource.data.comment is string &&
-        (
-          request.resource.data.parentId == null ||
-          request.resource.data.parentId is string
-        ) &&
-        request.resource.data.name.size() <= 80 &&
-        request.resource.data.comment.size() <= 1000;
-    }
-  }
-}
-```
+7. Open `http://localhost:3000`.
 
 ## Add a Blog Post
 
-Create a Markdown file in `data/blogs`:
-
-```md
----
-title: "Another Post"
-slug: "another-post"
-description: "A short SEO description for this post."
-createdAt: "2026-05-03"
----
-
-# Another Post
-
-Write your article in Markdown.
-```
-
-The post will be listed automatically at `/blogs` and published at `/blog/another-post`.
+Login as an admin at `/admin/blog`, write the post in Quill, preview it, and publish. Posts are stored in the Supabase `blogs` table.
 
 ## Vercel Deployment
 

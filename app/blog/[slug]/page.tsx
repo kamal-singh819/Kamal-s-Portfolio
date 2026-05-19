@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Comments } from "@/components/Comments";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { BlogHtml } from "@/components/blog/BlogHtml";
+import { BlogInteractions } from "@/components/blog/BlogInteractions";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { getAllBlogs, getBlogBySlug } from "@/lib/blogs";
+import { getBlogBySlug } from "@/lib/blogs";
 
-export function generateStaticParams() {
-  return getAllBlogs().map((blog) => ({ slug: blog.slug }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({
+export async function generateMetadata({
   params
 }: {
   params: { slug: string };
-}): Metadata {
-  const blog = getBlogBySlug(params.slug);
+}): Promise<Metadata> {
+  const blog = await getBlogBySlug(params.slug);
 
   if (!blog) {
     return {
@@ -43,7 +41,7 @@ export default async function BlogDetailPage({
 }: {
   params: { slug: string };
 }) {
-  const blog = getBlogBySlug(params.slug);
+  const blog = await getBlogBySlug(params.slug);
 
   if (!blog) {
     notFound();
@@ -65,8 +63,8 @@ export default async function BlogDetailPage({
         </div>
       </PageHeader>
 
-      <MarkdownRenderer content={blog.content} />
-      {/* <Comments slug={blog.slug} /> */}
+      <BlogHtml contentHtml={blog.contentHtml} />
+      <BlogInteractions blogId={blog.id} />
     </article>
   );
 }
