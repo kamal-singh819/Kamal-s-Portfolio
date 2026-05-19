@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Special_Elite, Shadows_Into_Light } from "next/font/google";
 import { Navigation } from "@/components/Navigation";
+import { AppProviders } from "@/components/providers/AppProviders";
 import { profile } from "@/data/common/profile";
 import "@/styles/globals.css";
 import "highlight.js/styles/github-dark.css";
@@ -51,6 +52,7 @@ export default function RootLayout({
         <footer className="mx-auto max-w-[700px] border-t border-line px-5 py-6 text-center text-sm text-zinc-500">
           © {currentYear} {profile.name}. All rights reserved.
         </footer>
+        <AppProviders />
       </body>
     </html>
   );

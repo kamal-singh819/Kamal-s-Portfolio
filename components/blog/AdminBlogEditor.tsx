@@ -1,10 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { BlogHtml } from "@/components/blog/BlogHtml";
 import { AuthButton } from "@/components/blog/AuthButton";
+import { Button } from "@/components/ui/Button";
+import { FullScreenLoader } from "@/components/ui/FullScreenLoader";
 import supabaseClient from "@/lib/supabase/client";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { useAuthStore } from "@/store/auth";
@@ -38,6 +41,10 @@ export function AdminBlogEditor() {
   const [contentHtml, setContentHtml] = useState("");
   const [status, setStatus] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingBlogs, setIsLoadingBlogs] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalBlogs, setTotalBlogs] = useState(0);
+  const pageSize = 8;
 
   const selectedBlog = useMemo(
     () => blogs.find((blog) => blog.id === selectedId) ?? null,
@@ -54,22 +61,34 @@ export function AdminBlogEditor() {
     }
   }, [isReady, role, router, user]);
 
-  useEffect(() => {
-    async function loadBlogs() {
-      if (!hasSupabaseEnv() || role !== "admin") {
-        return;
-      }
-
-      const { data } = await supabaseClient
-        .from("blogs")
-        .select("id, slug, title, description, content_html")
-        .order("updated_at", { ascending: false });
-
-      setBlogs((data as EditableBlog[] | null) ?? []);
+  const loadBlogs = useCallback(async (nextPage = page) => {
+    if (!hasSupabaseEnv() || role !== "admin") {
+      return;
     }
 
-    loadBlogs();
-  }, [role]);
+    setIsLoadingBlogs(true);
+    const from = (nextPage - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const { data, count, error } = await supabaseClient
+      .from("blogs")
+      .select("id, slug, title, description, content_html", { count: "exact" })
+      .order("updated_at", { ascending: false })
+      .range(from, to);
+
+    setIsLoadingBlogs(false);
+
+    if (error) {
+      toast.error("Could not load admin posts.");
+      return;
+    }
+
+    setBlogs((data as EditableBlog[] | null) ?? []);
+    setTotalBlogs(count ?? 0);
+  }, [page, role]);
+
+  useEffect(() => {
+    loadBlogs(page);
+  }, [loadBlogs, page]);
 
   useEffect(() => {
     if (!selectedBlog) {
@@ -97,6 +116,7 @@ export function AdminBlogEditor() {
 
     if (!user || role !== "admin") {
       setStatus("Only admin users can write or update blog posts.");
+      toast.error("Only admin users can write or update blog posts.");
       return;
     }
 
@@ -106,6 +126,7 @@ export function AdminBlogEditor() {
 
     if (!cleanTitle || !cleanSlug || !cleanDescription || !contentHtml.trim()) {
       setStatus("Title, slug, description, and content are required.");
+      toast.error("Title, slug, description, and content are required.");
       return;
     }
 
@@ -129,24 +150,21 @@ export function AdminBlogEditor() {
 
     if (error) {
       setStatus(error.message);
+      toast.error(error.message);
       return;
     }
 
     setStatus("Blog saved.");
+    toast.success(selectedId ? "Blog updated." : "Blog published.");
     const savedId =
       selectedId || (data && "id" in data ? String(data.id) : selectedId);
 
-    const { data: refreshedBlogs } = await supabaseClient
-      .from("blogs")
-      .select("id, slug, title, description, content_html")
-      .order("updated_at", { ascending: false });
-
-    setBlogs((refreshedBlogs as EditableBlog[] | null) ?? []);
+    await loadBlogs(page);
     setSelectedId(savedId);
   }
 
   if (!isReady) {
-    return <p className="text-sm text-zinc-600">Checking access...</p>;
+    return <FullScreenLoader label="Checking access" />;
   }
 
   if (!user) {
@@ -172,7 +190,6 @@ export function AdminBlogEditor() {
           </p>
           <h1 className="mt-2 text-3xl font-semibold text-ink">Blog editor</h1>
         </div>
-        <AuthButton />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -190,13 +207,41 @@ export function AdminBlogEditor() {
                 </option>
               ))}
             </select>
-            <button
+            <Button
               type="button"
               onClick={startNewPost}
-              className="rounded-md border border-line px-4 py-2 text-sm font-medium text-ink"
+              variant="secondary"
             >
               New
-            </button>
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-500">
+            <span>
+              {isLoadingBlogs
+                ? "Loading posts..."
+                : `${totalBlogs} saved ${totalBlogs === 1 ? "post" : "posts"}`}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={page === 1 || isLoadingBlogs}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="min-h-9 px-3 py-1.5"
+              >
+                Previous
+              </Button>
+              <span>Page {page}</span>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={page * pageSize >= totalBlogs || isLoadingBlogs}
+                onClick={() => setPage((current) => current + 1)}
+                className="min-h-9 px-3 py-1.5"
+              >
+                Next
+              </Button>
+            </div>
           </div>
 
           <input
@@ -242,13 +287,12 @@ export function AdminBlogEditor() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
               type="submit"
-              disabled={isSaving}
-              className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              isLoading={isSaving}
             >
-              {isSaving ? "Saving..." : selectedId ? "Update blog" : "Publish blog"}
-            </button>
+              {selectedId ? "Update blog" : "Publish blog"}
+            </Button>
             {status ? <p className="text-sm text-zinc-600">{status}</p> : null}
           </div>
         </form>

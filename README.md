@@ -1,19 +1,37 @@
 # Portfolio Blog App
 
-A clean, simple developer portfolio and Supabase-backed blog built with Next.js App Router and Tailwind CSS.
+A production-shaped portfolio plus Medium-style article platform built with Next.js App Router, Supabase, Zustand, Tailwind CSS, Quill, and toast notifications.
 
-## Features
+## What Is Included
 
-- Portfolio home page, projects page, and about page
-- Blog listing at `/blogs`
+- Portfolio pages for home, projects, and about
+- Supabase-backed blog posts with rich text editing at `/admin/blog`
+- Server-side paginated blog listing at `/blogs`
 - Blog detail pages at `/blog/[slug]`
-- Supabase-backed posts created from `/admin/blog`
-- Auto calculated read time
-- Quill rich text editing with side-by-side preview
-- Logged-in-only comments and likes
-- Admin-only blog create/update flow
-- Dynamic blog metadata, `sitemap.xml`, and `robots.txt`
-- Vercel-ready project structure
+- Admin-only create/update flow with paginated post selection
+- Email/password login and signup in a reusable global modal
+- Zustand stores for auth state and global modal state
+- Logged-in-only likes, comments, and replies
+- Toast notifications with `react-hot-toast`
+- Shared UI primitives for buttons, circular loaders, fullscreen loading, and pagination
+- Dynamic metadata, canonical URLs, `sitemap.xml`, and `robots.txt`
+
+## Project Structure
+
+```txt
+app/                 Next.js routes, metadata, sitemap, robots
+components/auth/     Login and signup modal
+components/blog/     Blog cards, editor, article HTML, interactions
+components/providers Global client providers
+components/ui/       Reusable UI primitives
+data/common/         Portfolio content
+lib/                 Supabase clients and blog data access
+models/              Shared domain types
+store/               Zustand auth and UI stores
+styles/              Tailwind global styles
+supabase/            Database schema and RLS policies
+utils/               Small shared utility types
+```
 
 ## Local Setup
 
@@ -23,42 +41,59 @@ A clean, simple developer portfolio and Supabase-backed blog built with Next.js 
 npm install
 ```
 
-2. Create a Supabase project.
-
-3. Copy the environment file:
+2. Create `.env.local`:
 
 ```bash
-cp .env.example .env.local
-```
-
-4. Add your Supabase config to `.env.local`:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-5. Run `supabase/schema.sql` in the Supabase SQL editor, then set your own row in `public.users` to `role = 'admin'`.
+3. Run `supabase/schema.sql` in the Supabase SQL editor.
 
-6. Run the development server:
+4. Start the app:
 
 ```bash
 npm run dev
 ```
 
-7. Open `http://localhost:3000`.
+5. Open `http://localhost:3000`.
 
-## Add a Blog Post
+## Supabase Auth
 
-Login as an admin at `/admin/blog`, write the post in Quill, preview it, and publish. Posts are stored in the Supabase `blogs` table.
+The app uses Supabase email/password auth. New users can create an account from the login modal, and Supabase can send the email verification message for free on the hosted plan.
 
-## Vercel Deployment
+To enable email verification:
 
-1. Push this project to GitHub.
-2. Import the repository in Vercel.
-3. Add the same environment variables from `.env.example`.
-4. Set `NEXT_PUBLIC_SITE_URL` to your production URL, for example `https://your-site.vercel.app`.
-5. Deploy.
+1. Go to Supabase Dashboard -> Authentication -> Providers -> Email.
+2. Keep Email provider enabled.
+3. Enable Confirm email.
+4. Set Site URL to your app URL, for example `http://localhost:3000` locally and your Vercel URL in production.
+5. Add any Redirect URLs you use, for example `http://localhost:3000/**` and `https://your-domain.com/**`.
 
-Vercel will run `npm install` and `npm run build` automatically for a Next.js project.
+Supabase handles the verification email and confirmation link. For production, configure SMTP in Supabase Auth settings if you want better deliverability and custom sender branding.
+
+## Admin Access
+
+After creating your own account, promote it in Supabase:
+
+```sql
+update public.users
+set role = 'admin'
+where email = 'you@example.com';
+```
+
+Then visit `/admin/blog` to create or update posts. The public article page shows an edit button only when the logged-in user has the `admin` role.
+
+## Useful Commands
+
+```bash
+npm run dev
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+## Deployment
+
+Deploy on Vercel, add the same environment variables, and set `NEXT_PUBLIC_SITE_URL` to the production URL. Vercel will install dependencies and build the Next.js app automatically.

@@ -1,4 +1,4 @@
-import type { BlogPost } from "@/models/blog";
+import type { BlogPost, PaginatedBlogs } from "@/models/blog";
 import { calculateReadTime } from "@/lib/read-time";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { unstable_noStore as noStore } from "next/cache";
@@ -50,6 +50,57 @@ export async function getAllBlogs(): Promise<BlogPost[]> {
   }
 
   return data.map((row) => mapBlog(row));
+}
+
+export async function getPaginatedBlogs(
+  page = 1,
+  pageSize = 6
+): Promise<PaginatedBlogs> {
+  noStore();
+  const supabase = createServerSupabaseClient();
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+  const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 6;
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+
+  if (!supabase) {
+    return {
+      blogs: [],
+      page: safePage,
+      pageSize: safePageSize,
+      total: 0,
+      totalPages: 0
+    };
+  }
+
+  const { data, error, count } = await supabase
+    .from("blogs")
+    .select("id, slug, title, description, content_html, published_at, created_at, updated_at", {
+      count: "exact"
+    })
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (error || !data) {
+    return {
+      blogs: [],
+      page: safePage,
+      pageSize: safePageSize,
+      total: 0,
+      totalPages: 0
+    };
+  }
+
+  const total = count ?? data.length;
+
+  return {
+    blogs: data.map((row) => mapBlog(row)),
+    page: safePage,
+    pageSize: safePageSize,
+    total,
+    totalPages: Math.ceil(total / safePageSize)
+  };
 }
 
 export async function getBlogBySlug(slug: string) {

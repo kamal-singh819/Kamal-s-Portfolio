@@ -13,6 +13,14 @@ export type BlogPost = BlogFrontmatter & {
   updatedAt: string;
 };
 
+export type PaginatedBlogs = {
+  blogs: BlogPost[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type Comment = {
   id: string;
   blogId: string;

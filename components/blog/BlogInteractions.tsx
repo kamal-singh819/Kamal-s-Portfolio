@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import supabaseClient from "@/lib/supabase/client";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { useAuthStore } from "@/store/auth";
 import type { Comment } from "@/models/blog";
-import { AuthButton } from "@/components/blog/AuthButton";
+import { Button } from "@/components/ui/Button";
+import { useUiStore } from "@/store/ui";
 
 type CommentRow = {
   id: string;
@@ -37,6 +39,7 @@ function mapComment(row: CommentRow): Comment {
 
 export function BlogInteractions({ blogId }: { blogId: string }) {
   const { user, isReady, initialize } = useAuthStore();
+  const openAuthModal = useUiStore((state) => state.openAuthModal);
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [likeCount, setLikeCount] = useState(0);
@@ -128,7 +131,7 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
     setError("");
 
     if (!user) {
-      setError("Please log in before liking this post.");
+      openAuthModal("Login or create a free account before liking this post.");
       return;
     }
 
@@ -141,11 +144,13 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
 
       if (deleteError) {
         setError("Could not remove your like.");
+        toast.error("Could not remove your like.");
         return;
       }
 
       setHasLiked(false);
       setLikeCount((current) => Math.max(0, current - 1));
+      toast.success("Like removed.");
       return;
     }
 
@@ -155,11 +160,13 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
 
     if (insertError) {
       setError("Could not like this post.");
+      toast.error("Could not like this post.");
       return;
     }
 
     setHasLiked(true);
     setLikeCount((current) => current + 1);
+    toast.success("Thanks for the like.");
   }
 
   async function handleCommentSubmit(
@@ -170,7 +177,7 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
     setError("");
 
     if (!user) {
-      setError("Please log in before commenting.");
+      openAuthModal("Login or create a free account before commenting.");
       return;
     }
 
@@ -180,6 +187,7 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
 
     if (!body) {
       setError("Please write a comment first.");
+      toast.error("Please write a comment first.");
       return;
     }
 
@@ -199,12 +207,14 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
 
     if (insertError || !data) {
       setError("Could not post comment.");
+      toast.error("Could not post comment.");
       return;
     }
 
     setComments((current) => [mapComment(data as unknown as CommentRow), ...current]);
     setReplyingTo(null);
     form.reset();
+    toast.success(parentId ? "Reply posted." : "Comment posted.");
   }
 
   return (
@@ -216,20 +226,15 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
             Login is required before liking or commenting.
           </p>
         </div>
-        <button
+        <Button
           type="button"
           onClick={toggleLike}
           disabled={!isReady}
-          className={`rounded-md border px-4 py-2 text-sm font-medium ${hasLiked
-              ? "border-ink bg-ink text-white"
-              : "border-line bg-white text-ink"
-            } disabled:opacity-60`}
+          variant={hasLiked ? "primary" : "secondary"}
         >
           {hasLiked ? "Liked" : "Like"} · {likeCount}
-        </button>
+        </Button>
       </div>
-
-      <AuthButton />
 
       <form
         onSubmit={(event) => handleCommentSubmit(event)}
@@ -239,17 +244,21 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
           name="comment"
           maxLength={1000}
           rows={4}
-          disabled={!user || isSubmitting}
+          disabled={isSubmitting}
+          onFocus={() => {
+            if (!user) {
+              openAuthModal("Login or create a free account before commenting.");
+            }
+          }}
           placeholder={user ? "Write a comment" : "Login to write a comment"}
           className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50"
         />
-        <button
+        <Button
           type="submit"
-          disabled={!user || isSubmitting}
-          className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+          isLoading={isSubmitting}
         >
-          {isSubmitting ? "Posting..." : "Post comment"}
-        </button>
+          Post comment
+        </Button>
       </form>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -269,19 +278,22 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
               <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-700">
                 {item.comment}
               </p>
-              {user ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setReplyingTo((current) =>
-                      current === item.id ? null : item.id
-                    )
+              <button
+                type="button"
+                onClick={() => {
+                  if (!user) {
+                    openAuthModal("Login or create a free account before replying.");
+                    return;
                   }
-                  className="mt-3 text-sm font-medium text-ink underline"
-                >
-                  Reply
-                </button>
-              ) : null}
+
+                  setReplyingTo((current) =>
+                    current === item.id ? null : item.id
+                  );
+                }}
+                className="mt-3 text-sm font-medium text-ink underline"
+              >
+                Reply
+              </button>
 
               {replyingTo === item.id ? (
                 <form
@@ -295,13 +307,12 @@ export function BlogInteractions({ blogId }: { blogId: string }) {
                     placeholder={`Reply to ${item.name}`}
                     className="w-full rounded-md border border-line bg-white px-3 py-2 text-sm outline-none focus:border-zinc-400"
                   />
-                  <button
+                  <Button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                    isLoading={isSubmitting}
                   >
                     Post reply
-                  </button>
+                  </Button>
                 </form>
               ) : null}
 

@@ -15,11 +15,18 @@ type AuthState = {
   authError: string;
   initialize: () => Promise<void>;
   signInWithEmailAndPassword: (email: string, password: string) => Promise<void>;
+  signUpWithEmailAndPassword: (
+    email: string,
+    password: string,
+    displayName: string
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: (user: User | null) => Promise<void>;
+  clearAuthError: () => void;
 };
 
 let authListenerStarted = false;
+let authInitialized = false;
 
 async function getOrCreateRole(user: User | null): Promise<UserRole | null> {
   if (!user || !hasSupabaseEnv()) {
@@ -62,6 +69,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   authError: "",
   initialize: async () => {
+    if (authInitialized) {
+      return;
+    }
+
+    authInitialized = true;
+
     if (!hasSupabaseEnv()) {
       set({
         isReady: true,
@@ -72,7 +85,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     set({ isLoading: true });
-    const { data } = await supabaseClient.auth.getSession();
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      set({ isReady: true, isLoading: false, authError: error.message });
+      return;
+    }
+
     const session = data.session;
     set({ session, user: session?.user ?? null });
     await get().refreshRole(session?.user ?? null);
@@ -104,7 +123,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({
       isLoading: false,
-      authError: error ? error.message : "Check your email for the login link."
+      authError: error ? error.message : ""
+    });
+  },
+  signUpWithEmailAndPassword: async (email, password, displayName) => {
+    if (!hasSupabaseEnv()) {
+      set({
+        authError:
+          "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable signup."
+      });
+      return;
+    }
+
+    set({ isLoading: true, authError: "" });
+    const { error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: displayName
+        },
+        emailRedirectTo:
+          typeof window === "undefined" ? undefined : `${window.location.origin}/blogs`
+      }
+    });
+
+    set({
+      isLoading: false,
+      authError: error ? error.message : ""
     });
   },
   signOut: async () => {
@@ -115,5 +161,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refreshRole: async (user) => {
     const role = await getOrCreateRole(user);
     set({ role });
-  }
+  },
+  clearAuthError: () => set({ authError: "" })
 }));

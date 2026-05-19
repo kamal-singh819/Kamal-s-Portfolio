@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AdminEditLink } from "@/components/blog/AdminEditLink";
 import { BlogHtml } from "@/components/blog/BlogHtml";
 import { BlogInteractions } from "@/components/blog/BlogInteractions";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -50,16 +51,19 @@ export default async function BlogDetailPage({
   return (
     <article className="space-y-8">
       <PageHeader eyebrow="Article" title={blog.title} description={blog.description}>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
-          <time dateTime={blog.createdAt}>
-            {new Date(blog.createdAt).toLocaleDateString("en", {
-              month: "long",
-              day: "numeric",
-              year: "numeric"
-            })}
-          </time>
-          <span>-</span>
-          <span>{blog.readTime}</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
+            <time dateTime={blog.createdAt}>
+              {new Date(blog.createdAt).toLocaleDateString("en", {
+                month: "long",
+                day: "numeric",
+                year: "numeric"
+              })}
+            </time>
+            <span>-</span>
+            <span>{blog.readTime}</span>
+          </div>
+          <AdminEditLink />
         </div>
       </PageHeader>
 
