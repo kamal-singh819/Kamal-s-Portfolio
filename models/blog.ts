@@ -21,13 +21,4 @@ export type PaginatedBlogs = {
   totalPages: number;
 };
 
-export type Comment = {
-  id: string;
-  blogId: string;
-  name: string;
-  comment: string;
-  parentId: string | null;
-  createdAt: string;
-};
-
 export type UserRole = "admin" | "end_user";

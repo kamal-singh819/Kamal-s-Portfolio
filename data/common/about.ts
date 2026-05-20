@@ -41,6 +41,17 @@ export const workPrinciples = [
 
 export const experience = [
   {
+    role: "Full Stack Developer",
+    company: "BioBrain Insights, Gurgaon",
+    type: "Full-time (On-site)",
+    period: "May 2026 - Present",
+    points: [
+      "Contributing to the product named BioBrain, a market research and analytics platform.",
+      "Developing responsive user interfaces using React and CSS.",
+      "Designing and implementing APIs using Node.js, Express.js and PostgreSQL.",
+    ]
+  },
+  {
     role: "Software Development Engineer",
     company: "Itobuz Technologies, Kolkata",
     type: "Full-time (On-site)",

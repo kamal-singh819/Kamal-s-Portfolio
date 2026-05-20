@@ -2,22 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { ProfileDropdown } from "@/components/ProfileDropdown";
-import { useAuthStore } from "@/store/auth";
-import { useUiStore } from "@/store/ui";
 
 const navItems = [
     { href: "/", label: "Home", activePaths: ["/"] },
     { href: "/projects", label: "Projects", activePaths: ["/projects"] },
-    { href: "/blogs", label: "Blog", activePaths: ["/blogs", "/blog"] },
+    { href: "/blogs", label: "Blogs", activePaths: ["/blogs", "/blog"] },
     { href: "/about", label: "About", activePaths: ["/about"] }
 ];
 
 export function Navigation() {
     const pathname = usePathname();
-    const { user, role } = useAuthStore();
-    const openAuthModal = useUiStore((state) => state.openAuthModal);
 
     const isActive = (item: (typeof navItems)[number]) => {
         return item.activePaths.some((path) => {
@@ -47,16 +41,6 @@ export function Navigation() {
                         {item.label}
                     </Link>
                 ))}
-                {user ? (
-                    <ProfileDropdown />
-                ) : (
-                    <Button
-                        onClick={() => openAuthModal("Login to like posts and join the discussion.")}
-                        className="min-h-9 px-3 py-1.5"
-                    >
-                        Login
-                    </Button>
-                )}
             </div>
         </nav>
     );

@@ -8,7 +8,7 @@ export function AuthButton() {
 
   return (
     <Button
-      onClick={() => openAuthModal("Login to manage posts, like articles, or comment.")}
+      onClick={() => openAuthModal()}
     >
       Login
     </Button>

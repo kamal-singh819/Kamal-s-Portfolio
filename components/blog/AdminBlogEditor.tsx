@@ -11,6 +11,7 @@ import { FullScreenLoader } from "@/components/ui/FullScreenLoader";
 import supabaseClient from "@/lib/supabase/client";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
 import { useAuthStore } from "@/store/auth";
+import { useUiStore } from "@/store/ui";
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
@@ -32,7 +33,7 @@ function slugify(value: string) {
 
 export function AdminBlogEditor() {
   const router = useRouter();
-  const { user, role, isReady, initialize } = useAuthStore();
+  const { user, role, isReady, initialize, signOut } = useAuthStore();
   const [blogs, setBlogs] = useState<EditableBlog[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [title, setTitle] = useState("");
@@ -45,6 +46,7 @@ export function AdminBlogEditor() {
   const [page, setPage] = useState(1);
   const [totalBlogs, setTotalBlogs] = useState(0);
   const pageSize = 8;
+  const openAuthModal = useUiStore((state) => state.openAuthModal);
 
   const selectedBlog = useMemo(
     () => blogs.find((blog) => blog.id === selectedId) ?? null,
@@ -189,6 +191,20 @@ export function AdminBlogEditor() {
             Admin
           </p>
           <h1 className="mt-2 text-3xl font-semibold text-ink">Blog editor</h1>
+
+          {user ? (
+            <div className="my-2">
+              <p className="text-sm mb-1">Admin: <b>{user.email}</b></p>
+              <button className="bg-red-500 text-white rounded-md px-4 py-1" onClick={signOut}>Logout</button>
+            </div>
+          ) : (
+            <Button
+              onClick={openAuthModal}
+              className="min-h-9 px-3 py-1.5"
+            >
+              Login
+            </Button>
+          )}
         </div>
       </div>
 

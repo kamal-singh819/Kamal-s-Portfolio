@@ -8,7 +8,7 @@ type BlogCardProps = {
 export function BlogCard({ blog }: BlogCardProps) {
   return (
     <article className="border-t border-line pt-6">
-      <Link href={`/blog/${blog.slug}`} className="group block space-y-2">
+      <Link href={`/blogs/${blog.slug}`} className="group block space-y-2">
         <h2 className="text-2xl font-semibold text-ink group-hover:underline">
           {blog.title}
         </h2>

@@ -25,7 +25,7 @@ export default async function BlogsPage({ searchParams }: BlogsPageProps) {
     <div className="space-y-10">
       <PageHeader
         eyebrow="Writing"
-        title="Blog"
+        title="Blogs"
         description="Medium-style engineering essays, portfolio notes, and field reports from the systems I am building."
       />
 

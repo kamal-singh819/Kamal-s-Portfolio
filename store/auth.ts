@@ -15,11 +15,6 @@ type AuthState = {
   authError: string;
   initialize: () => Promise<void>;
   signInWithEmailAndPassword: (email: string, password: string) => Promise<void>;
-  signUpWithEmailAndPassword: (
-    email: string,
-    password: string,
-    displayName: string
-  ) => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: (user: User | null) => Promise<void>;
   clearAuthError: () => void;
@@ -119,33 +114,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { error } = await supabaseClient.auth.signInWithPassword({
       email,
       password
-    });
-
-    set({
-      isLoading: false,
-      authError: error ? error.message : ""
-    });
-  },
-  signUpWithEmailAndPassword: async (email, password, displayName) => {
-    if (!hasSupabaseEnv()) {
-      set({
-        authError:
-          "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable signup."
-      });
-      return;
-    }
-
-    set({ isLoading: true, authError: "" });
-    const { error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: displayName
-        },
-        emailRedirectTo:
-          typeof window === "undefined" ? undefined : `${window.location.origin}/blogs`
-      }
     });
 
     set({
