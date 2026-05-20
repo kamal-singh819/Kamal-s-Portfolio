@@ -21,22 +21,6 @@ create table public.blogs (
   updated_at timestamptz not null default now()
 );
 
-create table public.comments (
-  id uuid primary key default gen_random_uuid(),
-  blog_id uuid not null references public.blogs(id) on delete cascade,
-  user_id uuid not null references public.users(id) on delete cascade,
-  parent_id uuid references public.comments(id) on delete cascade,
-  body text not null check (char_length(body) between 1 and 1000),
-  created_at timestamptz not null default now()
-);
-
-create table public.likes (
-  blog_id uuid not null references public.blogs(id) on delete cascade,
-  user_id uuid not null references public.users(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  primary key (blog_id, user_id)
-);
-
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -72,8 +56,6 @@ $$;
 
 alter table public.users enable row level security;
 alter table public.blogs enable row level security;
-alter table public.comments enable row level security;
-alter table public.likes enable row level security;
 
 create policy "Users can read users"
 on public.users for select
@@ -101,26 +83,4 @@ on public.blogs for update
 using (public.is_admin())
 with check (public.is_admin());
 
-create policy "Anyone can read comments"
-on public.comments for select
-using (true);
-
-create policy "Logged-in users can create comments"
-on public.comments for insert
-with check (auth.uid() = user_id);
-
-create policy "Anyone can read likes"
-on public.likes for select
-using (true);
-
-create policy "Logged-in users can like"
-on public.likes for insert
-with check (auth.uid() = user_id);
-
-create policy "Users can remove their own likes"
-on public.likes for delete
-using (auth.uid() = user_id);
-
 create index blogs_published_at_idx on public.blogs (published_at desc);
-create index comments_blog_id_created_at_idx on public.comments (blog_id, created_at desc);
-create index likes_blog_id_idx on public.likes (blog_id);

@@ -5,13 +5,10 @@ A production-shaped portfolio plus Medium-style article platform built with Next
 ## What Is Included
 
 - Portfolio pages for home, projects, and about
-- Supabase-backed blog posts with rich text editing at `/admin/blog`
 - Server-side paginated blog listing at `/blogs`
-- Blog detail pages at `/blog/[slug]`
-- Admin-only create/update flow with paginated post selection
+- Blog detail pages at `/blogs/[slug]`
 - Email/password login and signup in a reusable global modal
 - Zustand stores for auth state and global modal state
-- Logged-in-only likes, comments, and replies
 - Toast notifications with `react-hot-toast`
 - Shared UI primitives for buttons, circular loaders, fullscreen loading, and pagination
 - Dynamic metadata, canonical URLs, `sitemap.xml`, and `robots.txt`
@@ -72,18 +69,6 @@ To enable email verification:
 5. Add any Redirect URLs you use, for example `http://localhost:3000/**` and `https://your-domain.com/**`.
 
 Supabase handles the verification email and confirmation link. For production, configure SMTP in Supabase Auth settings if you want better deliverability and custom sender branding.
-
-## Admin Access
-
-After creating your own account, promote it in Supabase:
-
-```sql
-update public.users
-set role = 'admin'
-where email = 'you@example.com';
-```
-
-Then visit `/admin/blog` to create or update posts. The public article page shows an edit button only when the logged-in user has the `admin` role.
 
 ## Useful Commands
 
